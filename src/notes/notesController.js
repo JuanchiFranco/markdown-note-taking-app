@@ -2,65 +2,37 @@ import notesService from "./notesService.js";
 
 const notesController = {
     checkGrammar: async (req, res) => {
-        try{
-            const { markdown } = req.params;  
-            const response = await notesService.checkGrammar(markdown);
-            
-            if(!response.success){
-                return res.status(400).send(response.message);
-            }
-            res.status(200).send(response.matches);
-        } catch (error) {
-            console.error(error);
-            res.status(500).send(error.message);
-        }   
+        const { filename } = req.params;  
+        const { success, data: matches, message } = await notesService.checkGrammar(filename);
+        
+        if(!success) return res.status(404).json({ success, message });
+        res.json({ success: true, data: matches });
     },
     saveNote: async (req, res) => {
-        try{
-            const { title, content } = req.body;
-            if(!title || !content){
-                return res.status(400).send("Title and content are required");
-            }  
+        const { title, content } = req.body;
 
-            const response = await notesService.saveNote(title, content);
+        const { success, data, message } = await notesService.saveNote(title, content);
             
-            if(!response.success){
-                return res.status(400).send(response.message);
-            }
-            res.status(201).send(response.message);
-        } catch (error) {
-            console.error(error);
-            res.status(500).send(error.message);
-        }
+        if(!success) return res.status(400).json({ success, message });
+        res
+            .status(201)
+            .location(`/notes/${data.filename}/html`)
+            .json({ success: true, data, message });
     },
     listNotes: async (req, res) => {
-        try{
-            const { page=1, limit=10 } = req.query;
-            const response = await notesService.listNotes(page, limit);
+        const { page, limit } = req.query;
+        const { success, data, message } = await notesService.listNotes(page, limit);
             
-            if(!response.success){
-                return res.status(400).send(response.message);
-            }
+        if(!success) return res.status(400).json({ success, message });
 
-            res.status(200).send(response.data);
-        } catch (error) {
-            console.error(error);
-            res.status(500).send(error.message);
-        }
+        res.json({ success: true, data });
     },
     renderNote: async (req, res) => {
-        try{
-            const { markdown } = req.params;
-            const response = await notesService.renderNote(markdown);
+        const { filename } = req.params;
+        const { success, data: html, message } = await notesService.renderNote(filename);
             
-            if(!response.success){
-                return res.status(400).send(response.message);
-            }
-            res.status(200).send(response.html);
-        } catch (error) {
-            console.error(error);
-            res.status(500).send(error.message);
-        }
+        if(!success) return res.status(404).json({ success, message });
+        res.send(html);
     }
 }
 
